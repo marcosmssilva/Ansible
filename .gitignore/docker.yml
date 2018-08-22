@@ -1,0 +1,39 @@
+---
+- hosts: docker_entornos
+  remote_user: mmartins
+  become_user: root
+  become: yes
+
+  tasks:
+    - name: Creates directory
+      file:
+        path: /etc/docker
+        state: directory
+        owner: root
+        group: root
+        mode: 0700
+
+    # ignore_errors: True
+    - name: remove docker.list if exists
+      file: path=/etc/apt/sources.list.d/docker.list state=absent
+
+    - name: Copy docker daemon.json
+      copy:
+        src=./etc/docker/daemon.json dest=/etc/docker/daemon.json
+        owner=root group=root mode=0644
+    - name: apt-update
+      apt:
+        update_cache: yes
+
+
+    - name: Install dependencies
+      apt: name={{item}} state=latest
+      with_items:
+            - apt-transport-https
+            - ca-certificates
+            - curl
+            - gnupg2
+            - software-properties-common
+
+    - name: Install gpg key
+      shell: curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | sudo apt-key add -
